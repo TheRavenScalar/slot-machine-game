@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lucky Spin</title>
+  <style>
+    body { display: flex; flex-direction: column; align-items: center; font-family: Arial; background: #222; color: white; }
+    #reels { display: grid; grid-template-columns: repeat(3, 100px); gap: 10px; background: #444; padding: 10px; }
+    .reel { width: 100px; height: 100px; background: white; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+    #info { margin: 20px; font-size: 20px; }
+    button { margin: 5px; padding: 10px; font-size: 16px; cursor: pointer; }
+    .spinning { animation: spin 0.5s linear infinite; }
+    @keyframes spin { 0% { transform: translateY(0); } 100% { transform: translateY(-20px); } }
+  </style>
+</head>
+<body>
+  <div id="reels">
+    <div class="reel" id="reel1">?</div>
+    <div class="reel" id="reel2">?</div>
+    <div class="reel" id="reel3">?</div>
+  </div>
+  <div id="info">Coins: 100 | Bet: 0 | Last Win: 0</div>
+  <div>
+    <button onclick="chooseBet('low')">Low Bet (1 coin)</button>
+    <button onclick="chooseBet('high')">High Bet (5 coins)</button>
+    <button onclick="chooseBet('bonus')">Bonus Bet (10 coins)</button>
+    <button onclick="spin()" id="spinBtn" disabled>Spin</button>
+  </div>
+  <script>
+    const symbols = ['🍒', '🍋', '🍊', '7', '💎']; // Cherry, Lemon, Orange, 7, Diamond
+    const payouts = { '🍒🍒🍒': 5, '🍋🍋🍋': 10, '🍊🍊🍊': 15, '7️⃣7️⃣7️⃣': 50, '💎💎💎': 100 };
+    let state = { coins: 100, bet: 0, multiplier: 1, bonusChance: 0, lastWin: 0 };
+    let spinning = false;
+
+    const betOptions = {
+      low: { cost: 1, multiplier: 1, bonusChance: 0 },
+      high: { cost: 5, multiplier: 2, bonusChance: 0 },
+      bonus: { cost: 10, multiplier: 1.5, bonusChance: 0.1 }
+    };
+
+    function chooseBet(type) {
+      state.bet = betOptions[type].cost;
+      state.multiplier = betOptions[type].multiplier;
+      state.bonusChance = betOptions[type].bonusChance;
+      document.getElementById('spinBtn').disabled = false;
+      updateInfo();
+    }
+
+    function spin() {
+      if (spinning || state.coins < state.bet) return;
+      spinning = true;
+      state.coins -= state.bet;
+      document.getElementById('spinBtn').disabled = true;
+
+      // Animate reels
+      const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+      reels.forEach(reel => reel.classList.add('spinning'));
+
+      setTimeout(() => {
+        // Randomize symbols
+        const result = reels.map(() => symbols[Math.floor(Math.random() * symbols.length)]);
+        reels.forEach((reel, i) => {
+          reel.textContent = result[i];
+          reel.classList.remove('spinning');
+        });
+
+        // Check win
+        const line = result.join('');
+        state.lastWin = payouts[line] ? payouts[line] * state.bet * state.multiplier : 0;
+        state.coins += state.lastWin;
+
+        // Bonus spin
+        if (state.bonusChance && Math.random() < state.bonusChance) {
+          state.lastWin += 10 * state.bet; // Example bonus
+          state.coins += 10 * state.bet;
+          alert('Bonus Spin Win!');
+        }
+
+        spinning = false;
+        document.getElementById('spinBtn').disabled = false;
+        updateInfo();
+      }, 1000);
+    }
+
+    function updateInfo() {
+      document.getElementById('info').textContent = `Coins: ${state.coins} | Bet: ${state.bet} | Last Win: ${state.lastWin}`;
+      if (state.coins <= 0) {
+        alert('Game Over! No coins left.');
+        document.getElementById('spinBtn').disabled = true;
+      }
+    }
+  </script>
+</body>
+</html>
